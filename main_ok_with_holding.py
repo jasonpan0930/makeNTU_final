@@ -21,7 +21,8 @@ from src.server_client.client import *
 from src.server_client.server import *
 ###display###
 from src.server_client.screen import *
-from PySide6.QtWidgets import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import QTimer
 ###API###
 from src.func.api import *
 
