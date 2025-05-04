@@ -223,7 +223,7 @@ def sender_start():
 
         # 合併內容
         final_text = f"目標車輛是 {target_id} ，你想傳送的內容是：{check_content}"
-        window.mainScreen_display(f"You:{target_id}\n{check_content}")
+        window.mainScreen_display(f"To:{target_id}\n{check_content}")
 
         # 寫入 my_check.txt
         with open('sender_tmp/my_check.txt', 'w', encoding='utf-8') as f:
