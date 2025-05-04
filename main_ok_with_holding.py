@@ -71,7 +71,7 @@ def restore_stdin():
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
 def state_monitor():
-    global state, flush_stdin, receive_or_not
+    global state, flush_stdin, receive_or_not, history_str
     while True:
         if not flush_stdin and is_tab_pressed():
             state = "sender"
@@ -85,12 +85,14 @@ def state_monitor():
             print("[狀態] sender → 執行 sender_start()")
             sender_start()
             state = "await"
+            history_str = ""
             flush_stdin = False
 
         elif state == "receiver":
             print(f"[狀態] receiver → 處理 ")
             receiver_start()
             state = "await"
+            history_str = ""
             receive_or_not = False
 
 
@@ -124,6 +126,7 @@ def receiver_start():
                 message = "接受方正在與它車溝通"
                 holding = False
                 partner = ""
+                history_str = ""
         else:
             if not holding:
                 holding = True
@@ -178,7 +181,9 @@ def sender_start():
     with open("sender_tmp/sender.txt", "a", encoding="utf-8") as file:
         file.write(f"。我的車牌號碼是{get_car_id()}")  # 自動寫到檔案末尾
 
-    api_txt_to_json( input_path= 'sender_tmp/sender.txt', output_path= 'sender_tmp/sender.json')
+    print(f"online cars:\n{window.plate_manager.get_allplate()}")
+    online_Cars = str(window.plate_manager.get_allplate())
+    api_txt_to_json( input_path= 'sender_tmp/sender.txt', output_path= 'sender_tmp/sender.json', onlineCars= online_Cars)
 
     with open('sender_tmp/sender.json', 'r', encoding='utf-8') as f:
         sender_data = json.load(f)
@@ -196,6 +201,8 @@ def sender_start():
             sender_start()
             return
         correctness = sender_data.get("correctness", 0)  # 若沒這欄位則預設為 0
+    if sender_data.get("傳達訊息") == "":
+        correctness = 0
     print("correctness: ", correctness)
     print(sender_data)
     with open("sender_tmp/sender.json", "w", encoding="utf-8") as f:
@@ -382,6 +389,8 @@ if __name__== "__main__":
     set_on_message_callback(handle_incoming)
     ##接上server
     connect_with_retry()
+    
+    
 
     threading.Thread(target=state_monitor, daemon=True).start()
     threading.Thread(target=sio.wait, daemon=True).start()

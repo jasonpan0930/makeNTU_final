@@ -5,14 +5,22 @@
 import os
 import google.generativeai as genai
 import json
+import sys
+
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 添加到 Python 路径（确保 src/ 可以被识别为包）
+sys.path.append(project_root)
+# 现在可以使用相对导入
+from src.server_client.server import *
+from src.server_client.screen import *
 
 myApiKey = 'AIzaSyAqyDuuVe-oB_i0RlJXANWIIGE_gySNzu0'
 
-def api_txt_to_json(input_path: str, output_path: str):
+def api_txt_to_json(input_path: str, output_path: str, onlineCars: str):
     if os.path.exists(input_path) == False:
         print("input path does not exist")
         return
-    txt_to_json_pipeline(input_path, output_path)
+    txt_to_json_pipeline(input_path, output_path, onlineCars)
     print("already convert to json file")
 
 def api_json_to_txt(input_path: str, output_path: str):
@@ -33,14 +41,13 @@ def gemini_infer(prompt: str, temperature=0.0) -> str:
     })
     return response.text.strip()
 
-def extract_keywords(text: str) -> dict:
+def extract_keywords(text: str, onlineCars: str) -> dict:
     prompt = f"""
         你是一個專門從對話中提取關鍵資訊的 AI。請根據以下規則回傳 JSON 格式的資料：
 
         規則：
         1. 提取「來自的車牌號碼」、「目標對象車牌號碼」、「使用者想要傳達的訊息」
-        2. 若無法判斷任何欄位，correctness = "0"，否則 correctness = "1"
-        3. 若車牌號碼中任一超過1組，則 correctness = "0"
+        2. 若無法判斷該語句想傳達的訊息，correctness = "0"
         4. 傳達訊息不可僅包含車牌號碼資訊，否則 correctness = "0"
         5. 傳達訊息請用繁體中文。請直接說出他的目的，與目的無關或用於表達心情的字眼不需保留。不得包含不雅字詞，若有則請換成中性用語
         6.輸入的文字高機率包含兩個或兩個以上的車牌號碼
@@ -48,17 +55,22 @@ def extract_keywords(text: str) -> dict:
         這七個字符中不應該有任何其他符號(例如空格或"-")
         若輸入文字的車牌中有其他符號，請務必幫我忽略
         因此，車牌號碼的格式類似"ABC1234"
-        7. 回傳格式如下（不要有其他說明）：
+        7. 
+        8. 有時也會只有單純的對話，沒有任何其他車牌資訊。
+        此時請你把該對話內容簡單化後放入"傳達訊息"
+        並將傳給的車牌號碼設為空字串("")
+        8. 不要有"```json"以及"```"，直接輸出json檔案內容
+        9. 現在已知在現的車牌有：{onlineCars}，請只能從這些號碼中選擇"傳給的車牌號碼"
+        10. 回傳格式如下（不要有其他說明）：
         {{
         "correctness": "1",
         "來自的車牌號碼": "ABC1234",
         "傳給的車牌號碼": "XYZ5678",
         "傳達訊息": "想要超車"
         }}
-        8. 有時也會只有單純的對話，沒有任何其他車牌資訊。
-        此時請你把該對話內容簡單化後放入"傳達訊息"
-        並將傳給的車牌號碼設為空字串("")
-        9. 不要有"```json"以及"```"，直接輸出json檔案內容
+        再次提醒，你輸出的"傳給的車牌號碼"必須在{onlineCars}之中。
+        因為你拿到的語句是用語音便是判斷的，可能存在錯誤，因此請以我給你的選項為主。如果沒有相符的請選擇相近的。
+        
 
         以下是使用者輸入：
         {text}
@@ -110,10 +122,10 @@ def confirm_meaning_is_correct(text: str) -> int:
     reply = gemini_infer(prompt)
     return 1 if "1" in reply else 0
 
-def txt_to_json_pipeline(input_path: str, output_path: str) -> None:
+def txt_to_json_pipeline(input_path: str, output_path: str, onlineCars: str) -> None:
     with open(input_path, "r", encoding="utf-8") as f:
         request = f.read()
-    result = extract_keywords(request)
+    result = extract_keywords(request, onlineCars)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
 

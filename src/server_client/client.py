@@ -16,7 +16,7 @@ def set_car_id(car_id: str):
     CAR_ID = car_id
     print(f"carid = {car_id}")
     
-SERVER_URL = 'http://10.10.22.148:5000'  # 換成你的伺服器IP
+SERVER_URL = 'http://10.10.22.176:5000'  # 換成你的伺服器IP
 
 # 排隊的訊息 (deque：快速先進先出)
 message_queue = deque()
