@@ -1,22 +1,24 @@
 import sys
 import time
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
     QScrollArea, QFrame, QSizePolicy
 )
-from PySide6.QtCore import Qt, QTimer, Signal, QObject, QMetaObject
-from PySide6.QtGui import QFont
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
+from PyQt5.QtGui import QFont
 
 class CarPlateManager(QObject):
-    plates_changed = Signal()
-    plate_deleted = Signal(str)
-    plate_pending_delete = Signal(str)
-    plate_cancel_delete = Signal(str)
+    delete_plate_signal = pyqtSignal(str)
+    plates_changed = pyqtSignal()
+    plate_deleted = pyqtSignal(str)
+    plate_pending_delete = pyqtSignal(str)
+    plate_cancel_delete = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
         self.plates = []
         self.pending_deletes = {}  # plate -> QTimer
+        self.delete_plate_signal.connect(self._handle_delete_plate)
 
     def add_plate(self, plate):
         if plate in self.pending_deletes:
@@ -30,7 +32,8 @@ class CarPlateManager(QObject):
             self.plates_changed.emit()
 
     def delete_plate(self, plate, delay=3000):
-        if plate in self.pending_deletes:
+        self.delete_plate_signal.emit(plate)
+        '''if plate in self.pending_deletes:
             return  # 已經排隊刪除了
 
         timer = QTimer(self)
@@ -46,6 +49,25 @@ class CarPlateManager(QObject):
 
         timer.timeout.connect(do_delete)
         timer.start(delay)
+        self.pending_deletes[plate] = timer
+        self.plate_pending_delete.emit(plate)
+        print(f"排隊刪除: {plate}（3秒內可取消）")'''
+
+    def _handle_delete_plate(self, plate):
+        #at main so can use QTimer
+        def do_delete():
+            if plate in self.plates:
+                self.plates.remove(plate)
+                self.plate_deleted.emit(plate)
+                self.plates_changed.emit()
+                print(f"已刪除: {plate}")
+            self.pending_deletes.pop(plate, None)
+
+        timer = QTimer(self)
+        timer.setSingleShot(True)
+        timer.timeout.connect(do_delete)
+        timer.start(3000)
+
         self.pending_deletes[plate] = timer
         self.plate_pending_delete.emit(plate)
         print(f"排隊刪除: {plate}（3秒內可取消）")
@@ -283,7 +305,7 @@ if __name__ == "__main__":
         window.plate_manager.add_plate("ABC-123")
 
     QTimer.singleShot(3000, later_updates)  # 3秒後排程刪除
-    QTimer.singleShot(5000, cancel_delete)  # 5秒後補回（取消刪除)
+    #QTimer.singleShot(5000, cancel_delete)  # 5秒後補回（取消刪除)
 
     def calling():
         window.plate_calling("ABC-123")
