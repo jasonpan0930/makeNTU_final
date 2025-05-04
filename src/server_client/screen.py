@@ -20,6 +20,9 @@ class CarPlateManager(QObject):
         self.pending_deletes = {}  # plate -> QTimer
         self.delete_plate_signal.connect(self._handle_delete_plate)
 
+    def get_allplate(self):
+        return self.plates
+
     def add_plate(self, plate):
         if plate in self.pending_deletes:
             self.pending_deletes[plate].stop()
@@ -294,6 +297,7 @@ if __name__ == "__main__":
     # Demo
     window.plate_manager.add_plate("ABC-123")
     window.plate_manager.add_plate("XYZ-789")
+    window.plate_manager.get_allplate()  ##return list of plate str
 
     def later_updates():
         window.plate_manager.delete_plate("ABC-123")
