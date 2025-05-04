@@ -85,14 +85,12 @@ def state_monitor():
             print("[狀態] sender → 執行 sender_start()")
             sender_start()
             state = "await"
-            history_str = ""
             flush_stdin = False
 
         elif state == "receiver":
             print(f"[狀態] receiver → 處理 ")
             receiver_start()
             state = "await"
-            history_str = ""
             receive_or_not = False
 
 
