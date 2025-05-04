@@ -357,7 +357,15 @@ def handle_incoming(data):
 
         ### there should call a function to do sth
 
-
+def tell_me_all_cars():
+    online_cars= get_online_cars()
+    online_cars = [cid for cid in online_cars if cid != get_car_id()]
+    print(f"[Main] 目前在線的車輛有：{online_cars}")
+    with open('online_cars.txt', 'w', encoding='utf-8') as f:
+        f.write("目前在線的車輛有：\n")
+        for car in online_cars:
+            f.write(f"{car}\n")
+    play_audio('online_cars.txt')
 
 if __name__== "__main__":
     ##set CarID

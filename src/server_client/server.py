@@ -237,5 +237,9 @@ def handle_message(data):
     else:
         print("[Error] Message missing 'target_id' or 'payload'.")
 
+def get_online_cars():
+    online_cars = [cid for cid in car_sessions]
+    return online_cars
+
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=5000)
